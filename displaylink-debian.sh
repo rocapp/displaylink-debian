@@ -103,34 +103,44 @@ fi
 
 # Dependencies
 dep_check() {
-echo -e "\nChecking dependencies\n"
+    echo -e "\nChecking dependencies\n"
 
-deps=(unzip linux-headers-$(uname -r) dkms lsb-release linux-source x11-xserver-utils wget libdrm-dev libelf-dev git pciutils)
-
-for dep in ${deps[@]}
-do
-	if ! dpkg -s $dep | grep "Status: install ok installed" > /dev/null 2>&1
-	then
-		default=y
-		read -p "$dep not found! Install? [Y/n] " response
-		response=${response:-$default}
-		if [[ $response =~  ^(yes|y|Y)$ ]]
-		then
-			if ! apt-get install $dep
-			then
-				echo "$dep installation failed.  Aborting."
-				exit 1
-			fi
-		else
-			separator
-			echo -e "\nCannot continue without $dep.  Aborting."
-			separator
-		exit 1
-		fi
-	else
-		echo "$dep is installed"
+    # added to work with proxmox
+    # proxmox-headers-6.2.16-15-pve
+    KERNEL_VERSION=linux
+    check_for_proxmox() {
+	PX=$(locate proxmox-backup-client)
+	if [ "$PX" != '' ]; then
+	    KERNEL_VERSION=proxmox
 	fi
-done
+    }
+
+    deps=(unzip $KERNEL_VERSION-headers-$(uname -r) dkms lsb-release linux-source x11-xserver-utils wget libdrm-dev libelf-dev git pciutils)
+
+    for dep in ${deps[@]}
+    do
+	    if ! dpkg -s $dep | grep "Status: install ok installed" > /dev/null 2>&1
+	    then
+		    default=y
+		    read -p "$dep not found! Install? [Y/n] " response
+		    response=${response:-$default}
+		    if [[ $response =~  ^(yes|y|Y)$ ]]
+		    then
+			    if ! apt-get install $dep
+			    then
+				    echo "$dep installation failed.  Aborting."
+				    exit 1
+			    fi
+		    else
+			    separator
+			    echo -e "\nCannot continue without $dep.  Aborting."
+			    separator
+		    exit 1
+		    fi
+	    else
+		    echo "$dep is installed"
+	    fi
+    done
 }
 
 distro_check(){
@@ -495,7 +505,7 @@ fi
 # add udl/udlfb to blacklist depending on kernel version (issue #207)
 if [ "$(ver2int $kernel_check)" -ge "$(ver2int '4.14.9')" ];
 then
-		udl_block
+    udl_block
 fi
 
 }
